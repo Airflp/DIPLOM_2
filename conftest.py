@@ -1,48 +1,33 @@
 import pytest
-import requests
 
-from data.user_data import (
-    BASE_URL,
-    REGISTER_ENDPOINT,
-    LOGIN_ENDPOINT,
-    USER_ENDPOINT
-)
 from helpers.user_generator import generate_user_data
+from helpers.api_requests import register_user, login_user, delete_user
 
 
 @pytest.fixture
 def create_user():
     payload = generate_user_data()
 
-    response = requests.post(
-        f"{BASE_URL}{REGISTER_ENDPOINT}",
-        json=payload
-    )
+    response = register_user(payload)
 
     access_token = None
     if response.status_code == 200 and response.json().get("success") is True:
         access_token = response.json().get("accessToken")
 
-    yield payload, access_token
+    yield payload, response
 
     if access_token:
-        requests.delete(
-            f"{BASE_URL}{USER_ENDPOINT}",
-            headers={"Authorization": access_token}
-        )
+        delete_user(access_token)
 
 
 @pytest.fixture
 def auth_user(create_user):
     payload, _ = create_user
 
-    response = requests.post(
-        f"{BASE_URL}{LOGIN_ENDPOINT}",
-        json={
-            "email": payload["email"],
-            "password": payload["password"]
-        }
+    response = login_user(
+        email=payload["email"],
+        password=payload["password"]
     )
 
     access_token = response.json().get("accessToken")
-    yield payload, access_token
+    return payload, access_token

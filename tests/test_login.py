@@ -1,7 +1,7 @@
 import allure
-import requests
 
-from data.user_data import BASE_URL, LOGIN_ENDPOINT
+from data.user_data import TestUserData
+from helpers.api_requests import login_user
 
 
 class TestLoginUser:
@@ -10,12 +10,9 @@ class TestLoginUser:
     def test_login_existing_user(self, create_user):
         payload, _ = create_user
 
-        response = requests.post(
-            f"{BASE_URL}{LOGIN_ENDPOINT}",
-            json={
-                "email": payload["email"],
-                "password": payload["password"]
-            }
+        response = login_user(
+            email=payload["email"],
+            password=payload["password"]
         )
 
         assert response.status_code == 200
@@ -24,13 +21,11 @@ class TestLoginUser:
 
     @allure.title("Логин с неверным логином и паролем")
     def test_login_with_invalid_credentials(self):
-        response = requests.post(
-            f"{BASE_URL}{LOGIN_ENDPOINT}",
-            json={
-                "email": "wrong_user@yandex.ru",
-                "password": "wrong_password"
-            }
+        response = login_user(
+            email=TestUserData.INVALID_EMAIL,
+            password=TestUserData.INVALID_PASSWORD
         )
 
         assert response.status_code == 401
         assert response.json()["success"] is False
+        assert response.json()["message"] == "email or password are incorrect"
